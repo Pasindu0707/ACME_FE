@@ -41,6 +41,15 @@ function CompanyDetails() {
           <input id="chequeNumber" class="swal2-input" placeholder="Cheque Number">
         </div>
       `,
+      didOpen: () => {
+        const advanceInput = document.getElementById('advance');
+        advanceInput.addEventListener('input', () => {
+          let rawValue = advanceInput.value.replace(/,/g, '');
+          if (!isNaN(rawValue) && rawValue !== '') {
+            advanceInput.value = Number(rawValue).toLocaleString();
+          }
+        });
+      },
       focusConfirm: false,
       showCancelButton: true,
       confirmButtonText: 'Add Record',
@@ -50,18 +59,24 @@ function CompanyDetails() {
         const invoiceNo = document.getElementById('invoiceNo').value.trim();
         const containerNo = document.getElementById('containerNo').value.trim();
         const product = document.getElementById('product').value.trim();
-        const advance = document.getElementById('advance').value.trim();
+        const advanceRaw = document.getElementById('advance').value.trim().replace(/,/g, '');
         const chequeNumber = document.getElementById('chequeNumber').value.trim();
-
+  
         if (!invoiceNo || !containerNo || !product) {
           Swal.showValidationMessage('Please fill out all required fields');
           return false;
         }
-
-        return { invoiceNo, containerNo, product, advance, chequeNumber };
+  
+        return {
+          invoiceNo,
+          containerNo,
+          product,
+          advance: advanceRaw,
+          chequeNumber
+        };
       }
     });
-
+  
     if (record) {
       try {
         await axiosInstance.post(`/companies/${_id}/records/add`, record);
@@ -82,6 +97,7 @@ function CompanyDetails() {
       }
     }
   };
+  
 
   const handleUpdateRecord = async (record) => {
     const { value: updatedRecord } = await Swal.fire({
@@ -91,10 +107,19 @@ function CompanyDetails() {
           <input id="invoiceNo" class="swal2-input" placeholder="Invoice Number" value="${record.invoiceNo}">
           <input id="containerNo" class="swal2-input" placeholder="Container Number" value="${record.containerNo}">
           <input id="product" class="swal2-input" placeholder="Product" value="${record.product}">
-          <input id="advance" class="swal2-input" placeholder="Advance" value="${record.advance}">
+          <input id="advance" class="swal2-input" placeholder="Advance" value="${Number(record.advance).toLocaleString()}">
           <input id="chequeNumber" class="swal2-input" placeholder="Cheque Number (optional)" value="${record.chequeNumber || ''}">
         </div>
       `,
+      didOpen: () => {
+        const advanceInput = document.getElementById('advance');
+        advanceInput.addEventListener('input', () => {
+          let rawValue = advanceInput.value.replace(/,/g, '');
+          if (!isNaN(rawValue) && rawValue !== '') {
+            advanceInput.value = Number(rawValue).toLocaleString();
+          }
+        });
+      },
       focusConfirm: false,
       showCancelButton: true,
       confirmButtonText: 'Update Record',
@@ -104,18 +129,24 @@ function CompanyDetails() {
         const invoiceNo = document.getElementById('invoiceNo').value.trim();
         const containerNo = document.getElementById('containerNo').value.trim();
         const product = document.getElementById('product').value.trim();
-        const advance = document.getElementById('advance').value.trim();
+        const advanceRaw = document.getElementById('advance').value.trim().replace(/,/g, '');
         const chequeNumber = document.getElementById('chequeNumber').value.trim();
-
+  
         if (!invoiceNo || !containerNo || !product) {
           Swal.showValidationMessage('Please fill out all required fields');
           return false;
         }
-
-        return { invoiceNo, containerNo, product, advance, chequeNumber };
+  
+        return {
+          invoiceNo,
+          containerNo,
+          product,
+          advance: advanceRaw,
+          chequeNumber
+        };
       }
     });
-
+  
     if (updatedRecord) {
       try {
         await axiosInstance.put(`/companies/${_id}/records/${record._id}`, updatedRecord);
@@ -136,6 +167,7 @@ function CompanyDetails() {
       }
     }
   };
+  
 
   const handleDeleteRecord = async (recordId) => {
     const result = await Swal.fire({
