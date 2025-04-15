@@ -34,19 +34,32 @@ function CompanyDetails() {
       const response = await axiosInstance.get(`/companies/reports/details/${_id}`, {
         responseType: 'blob',
       });
-
+  
       const blob = new Blob([response.data], { type: 'application/pdf' });
       const pdfUrl = URL.createObjectURL(blob);
-
-      const iframe = document.createElement('iframe');
-      iframe.style.display = 'none';
-      iframe.src = pdfUrl;
-
-      document.body.appendChild(iframe);
-      iframe.onload = () => {
-        iframe.contentWindow.focus();
-        iframe.contentWindow.print();
-      };
+  
+      const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+  
+      if (isMobile) {
+        // On mobile: directly download
+        const link = document.createElement('a');
+        link.href = pdfUrl;
+        link.setAttribute('download', `${company.name.replace(/\s+/g, '_')}_details.pdf`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      } else {
+        // On PC: open in iframe and print
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = pdfUrl;
+        document.body.appendChild(iframe);
+  
+        iframe.onload = () => {
+          iframe.contentWindow.focus();
+          iframe.contentWindow.print();
+        };
+      }
     } catch (error) {
       console.error('PDF preview error:', error);
       Swal.fire({
@@ -56,7 +69,7 @@ function CompanyDetails() {
       });
     }
   };
-
+  
   const handleAddRecord = async () => {
     const { value: record } = await Swal.fire({
       title: 'Add Record',
