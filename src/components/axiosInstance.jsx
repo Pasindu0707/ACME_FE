@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 const axiosInstance = axios.create({
-  baseURL: 'https://acme-be.vercel.app',
+  baseURL: 'http://localhost:3500',
   headers: {
     'Content-Type': 'application/json',
   },
