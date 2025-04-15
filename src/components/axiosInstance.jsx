@@ -13,18 +13,15 @@ const axiosInstance = axios.create({
 // You can add interceptors if needed
 axiosInstance.interceptors.request.use(
   (config) => {
-    // Add authorization headers or other configurations if necessary
-    // For example, if you want to add a token:
-    // const token = localStorage.getItem('token');
-    // if (token) {
-    //   config.headers.Authorization = `Bearer ${token}`;
-    // }
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
+
 
 axiosInstance.interceptors.response.use(
   (response) => response,

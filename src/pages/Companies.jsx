@@ -28,6 +28,37 @@ function Companies() {
       setLoading(false);
     }
   };
+  const handleDownloadCompanies = async () => {
+    try {
+      const response = await axiosInstance.get('/companies/reports/summary', {
+        responseType: 'blob',
+      });
+
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const pdfUrl = URL.createObjectURL(blob);
+
+      // Create a hidden iframe
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = pdfUrl;
+      document.body.appendChild(iframe);
+
+      // Trigger print after iframe loads
+      iframe.onload = () => {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+      };
+    } catch (error) {
+      console.error('Download error:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Failed to Print',
+        text: error.response?.status === 401
+          ? 'You must be logged in to print this report.'
+          : 'An error occurred while generating the report.',
+      });
+    }
+  };
 
   const handleSearchChange = (event) => {
     setSearchTerm(event.target.value);
@@ -143,7 +174,7 @@ function Companies() {
               </div>
               <div className="ml-3">
                 <p className="text-sm text-red-700">{error}</p>
-                <button 
+                <button
                   onClick={fetchCompanies}
                   className="mt-2 text-sm font-medium text-red-700 hover:text-red-800"
                 >
@@ -167,7 +198,7 @@ function Companies() {
               <h1 className="text-3xl font-bold text-gray-900">Companies</h1>
               <p className="mt-2 text-gray-600">Manage your company records</p>
             </div>
-            <div className="mt-4 md:mt-0">
+            <div className="mt-4 md:mt-0 flex gap-2">
               <button
                 className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 onClick={handleAddCompany}
@@ -177,7 +208,18 @@ function Companies() {
                 </svg>
                 Add Company
               </button>
+
+              <button
+                className="inline-flex items-center px-4 py-2 border border-blue-600 text-blue-600 rounded-md shadow-sm text-sm font-medium bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                onClick={handleDownloadCompanies}
+              >
+                <svg className="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3" />
+                </svg>
+                Download All
+              </button>
             </div>
+
           </div>
         </div>
 
@@ -204,12 +246,12 @@ function Companies() {
               <div className="overflow-hidden">
                 <ul className="divide-y divide-gray-200">
                   {filteredCompanies.map(company => (
-                    <li 
+                    <li
                       key={company._id}
                       className="hover:bg-gray-50 transition-colors duration-150 ease-in-out"
                     >
                       <div className="px-4 py-4 sm:px-6 flex items-center justify-between">
-                        <div 
+                        <div
                           className="flex-1 cursor-pointer"
                           onClick={() => handleCompanyClick(company._id)}
                         >
