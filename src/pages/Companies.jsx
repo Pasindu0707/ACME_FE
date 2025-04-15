@@ -33,21 +33,32 @@ function Companies() {
       const response = await axiosInstance.get('/companies/reports/summary', {
         responseType: 'blob',
       });
-
+  
       const blob = new Blob([response.data], { type: 'application/pdf' });
       const pdfUrl = URL.createObjectURL(blob);
-
-      // Create a hidden iframe
-      const iframe = document.createElement('iframe');
-      iframe.style.display = 'none';
-      iframe.src = pdfUrl;
-      document.body.appendChild(iframe);
-
-      // Trigger print after iframe loads
-      iframe.onload = () => {
-        iframe.contentWindow.focus();
-        iframe.contentWindow.print();
-      };
+  
+      const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+  
+      if (isMobile) {
+        // Mobile – directly download the file
+        const link = document.createElement('a');
+        link.href = pdfUrl;
+        link.setAttribute('download', 'company_payment_summary.pdf');
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      } else {
+        // PC – open in iframe and trigger print
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        iframe.src = pdfUrl;
+        document.body.appendChild(iframe);
+  
+        iframe.onload = () => {
+          iframe.contentWindow.focus();
+          iframe.contentWindow.print();
+        };
+      }
     } catch (error) {
       console.error('Download error:', error);
       Swal.fire({
@@ -59,6 +70,7 @@ function Companies() {
       });
     }
   };
+  
 
   const handleSearchChange = (event) => {
     setSearchTerm(event.target.value);
