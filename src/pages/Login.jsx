@@ -16,8 +16,13 @@ function Login() {
     setIsLoading(true);
     
     try {
-      const response = await axiosInstance.post('/auth', { user: username, pwd: password },{ withCredentials: true }); // Use the Axios instance
+      const response = await axiosInstance.post('/auth', { user: username, pwd: password }, { withCredentials: true });
       const { accessToken } = response.data;
+      
+      // Store token in localStorage
+      localStorage.setItem('accessToken', accessToken);
+      
+      // Call login function from context
       login(accessToken);
     } catch (err) {
       if (err.response) {
