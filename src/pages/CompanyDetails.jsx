@@ -10,6 +10,8 @@ function CompanyDetails() {
   const [company, setCompany] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
 
   useEffect(() => {
     fetchCompanyDetails();
@@ -30,43 +32,87 @@ function CompanyDetails() {
   };
 
   const handleDownloadPDF = async () => {
-    try {
-      const response = await axiosInstance.get(`/companies/reports/details/${_id}`, {
-        responseType: 'blob',
-      });
-
-      const blob = new Blob([response.data], { type: 'application/pdf' });
-      const pdfUrl = URL.createObjectURL(blob);
-
-      const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-
-      if (isMobile) {
-        // On mobile: directly download
-        const link = document.createElement('a');
-        link.href = pdfUrl;
-        link.setAttribute('download', `${company.name.replace(/\s+/g, '_')}_details.pdf`);
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-      } else {
-        // On PC: open in iframe and print
-        const iframe = document.createElement('iframe');
-        iframe.style.display = 'none';
-        iframe.src = pdfUrl;
-        document.body.appendChild(iframe);
-
-        iframe.onload = () => {
-          iframe.contentWindow.focus();
-          iframe.contentWindow.print();
-        };
+    const { value: dates } = await Swal.fire({
+      title: 'Select Date Range',
+      html: `
+        <div class="flex flex-col space-y-4 mt-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+            <input
+              type="date"
+              id="fromDate"
+              class="swal2-input"
+              placeholder="From Date"
+            >
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+            <input
+              type="date"
+              id="toDate"
+              class="swal2-input"
+              placeholder="To Date"
+            >
+          </div>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: 'Download PDF',
+      confirmButtonColor: '#3B82F6',
+      cancelButtonText: 'Cancel',
+      focusConfirm: false,
+      preConfirm: () => {
+        const fromDate = document.getElementById('fromDate').value;
+        const toDate = document.getElementById('toDate').value;
+        if (!fromDate || !toDate) {
+          Swal.showValidationMessage('Please select both dates');
+          return false;
+        }
+        return { fromDate, toDate };
       }
-    } catch (error) {
-      console.error('PDF preview error:', error);
-      Swal.fire({
-        icon: 'error',
-        title: 'Print Preview Failed',
-        text: 'Could not open the PDF in print preview.',
-      });
+    });
+
+    if (dates) {
+      try {
+        const response = await axiosInstance.get(`/companies/reports/details/${_id}`, {
+          params: {
+            fromDate: dates.fromDate,
+            toDate: dates.toDate
+          },
+          responseType: 'blob',
+        });
+
+        const blob = new Blob([response.data], { type: 'application/pdf' });
+        const pdfUrl = URL.createObjectURL(blob);
+
+        const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+
+        if (isMobile) {
+          const link = document.createElement('a');
+          link.href = pdfUrl;
+          link.setAttribute('download', `${company.name.replace(/\s+/g, '_')}_details.pdf`);
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+        } else {
+          const iframe = document.createElement('iframe');
+          iframe.style.display = 'none';
+          iframe.src = pdfUrl;
+          document.body.appendChild(iframe);
+
+          iframe.onload = () => {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+          };
+        }
+      } catch (error) {
+        console.error('PDF preview error:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Print Preview Failed',
+          text: 'Could not open the PDF in print preview.',
+        });
+      }
     }
   };
 
@@ -183,12 +229,12 @@ function CompanyDetails() {
         const advanceRaw = document.getElementById('advance').value.trim().replace(/,/g, '');
         const chequeNumber = document.getElementById('chequeNumber').value.trim();
         const date = document.getElementById('date').value;
-  
+
         if (!invoiceNo || !containerNo || !product) {
           Swal.showValidationMessage('Please fill out all required fields');
           return false;
         }
-  
+
         return {
           invoiceNo,
           containerNo,
@@ -199,7 +245,7 @@ function CompanyDetails() {
         };
       }
     });
-  
+
     if (updatedRecord) {
       try {
         await axiosInstance.put(`/companies/${_id}/records/${record._id}`, updatedRecord);
@@ -220,8 +266,6 @@ function CompanyDetails() {
       }
     }
   };
-  
-
 
   const handleDeleteRecord = async (recordId) => {
     const result = await Swal.fire({
@@ -341,7 +385,6 @@ function CompanyDetails() {
                 Add New Record
               </button>
             </div>
-
           </div>
         </div>
 
@@ -350,50 +393,50 @@ function CompanyDetails() {
             {company.records && company.records.length > 0 ? (
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
-  <thead className="bg-gray-50">
-    <tr>
-      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice No</th>
-      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Container No</th>
-      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payments</th>
-      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cheque No</th>
-      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-    </tr>
-  </thead>
-  <tbody className="bg-white divide-y divide-gray-200">
-    {company.records.map(record => (
-      <tr key={record._id} className="hover:bg-gray-50">
-        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-          {record.date ? new Date(record.date).toISOString().split('T')[0] : '-'}
-        </td>
-        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{record.invoiceNo}</td>
-        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{record.containerNo}</td>
-        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{record.product}</td>
-        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-          {record.advance ? Number(record.advance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}
-        </td>
-        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{record.chequeNumber || '-'}</td>
-        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-          <div className="flex space-x-2">
-            <button
-              className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-yellow-700 bg-yellow-100 hover:bg-yellow-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
-              onClick={() => handleUpdateRecord(record)}
-            >
-              Edit
-            </button>
-            <button
-              className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-              onClick={() => handleDeleteRecord(record._id)}
-            >
-              Delete
-            </button>
-          </div>
-        </td>
-      </tr>
-    ))}
-  </tbody>
-</table>
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice No</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Container No</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payments</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cheque No</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {company.records.map(record => (
+                      <tr key={record._id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {record.date ? new Date(record.date).toISOString().split('T')[0] : '-'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{record.invoiceNo}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{record.containerNo}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{record.product}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {record.advance ? Number(record.advance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{record.chequeNumber || '-'}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex space-x-2">
+                            <button
+                              className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-yellow-700 bg-yellow-100 hover:bg-yellow-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+                              onClick={() => handleUpdateRecord(record)}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                              onClick={() => handleDeleteRecord(record._id)}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
 
               </div>
             ) : (

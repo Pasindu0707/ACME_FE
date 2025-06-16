@@ -10,6 +10,8 @@ function Companies() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
 
   useEffect(() => {
     fetchCompanies();
@@ -29,48 +31,93 @@ function Companies() {
     }
   };
   const handleDownloadCompanies = async () => {
-    try {
-      const response = await axiosInstance.get('/companies/reports/summary', {
-        responseType: 'blob',
-      });
-  
-      const blob = new Blob([response.data], { type: 'application/pdf' });
-      const pdfUrl = URL.createObjectURL(blob);
-  
-      const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
-  
-      if (isMobile) {
-        // Mobile – directly download the file
-        const link = document.createElement('a');
-        link.href = pdfUrl;
-        link.setAttribute('download', 'company_payment_summary.pdf');
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-      } else {
-        // PC – open in iframe and trigger print
-        const iframe = document.createElement('iframe');
-        iframe.style.display = 'none';
-        iframe.src = pdfUrl;
-        document.body.appendChild(iframe);
-  
-        iframe.onload = () => {
-          iframe.contentWindow.focus();
-          iframe.contentWindow.print();
-        };
+    const { value: dates } = await Swal.fire({
+      title: 'Select Date Range',
+      html: `
+        <div class="flex flex-col space-y-4 mt-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+            <input
+              type="date"
+              id="fromDate"
+              class="swal2-input"
+              placeholder="From Date"
+            >
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+            <input
+              type="date"
+              id="toDate"
+              class="swal2-input"
+              placeholder="To Date"
+            >
+          </div>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: 'Download PDF',
+      confirmButtonColor: '#3B82F6',
+      cancelButtonText: 'Cancel',
+      focusConfirm: false,
+      preConfirm: () => {
+        const fromDate = document.getElementById('fromDate').value;
+        const toDate = document.getElementById('toDate').value;
+        if (!fromDate || !toDate) {
+          Swal.showValidationMessage('Please select both dates');
+          return false;
+        }
+        return { fromDate, toDate };
       }
-    } catch (error) {
-      console.error('Download error:', error);
-      Swal.fire({
-        icon: 'error',
-        title: 'Failed to Print',
-        text: error.response?.status === 401
-          ? 'You must be logged in to print this report.'
-          : 'An error occurred while generating the report.',
-      });
+    });
+
+    if (dates) {
+      try {
+        const response = await axiosInstance.get('/companies/reports/summary', {
+          params: {
+            fromDate: dates.fromDate,
+            toDate: dates.toDate
+          },
+          responseType: 'blob',
+        });
+
+        const blob = new Blob([response.data], { type: 'application/pdf' });
+        const pdfUrl = URL.createObjectURL(blob);
+
+        const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+
+        if (isMobile) {
+          const link = document.createElement('a');
+          link.href = pdfUrl;
+          link.setAttribute('download', 'company_payment_summary.pdf');
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+        } else {
+          const iframe = document.createElement('iframe');
+          iframe.style.display = 'none';
+          iframe.src = pdfUrl;
+          document.body.appendChild(iframe);
+
+          iframe.onload = () => {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+          };
+        }
+      } catch (error) {
+        console.error('Download error:', error);
+        Swal.fire({
+          icon: 'error',
+          title: 'Failed to Print',
+          text: error.response?.status === 401
+            ? 'You must be logged in to print this report.'
+            : 'An error occurred while generating the report.',
+        });
+      }
     }
   };
-  
+
+
 
   const handleSearchChange = (event) => {
     setSearchTerm(event.target.value);
@@ -210,7 +257,11 @@ function Companies() {
               <h1 className="text-3xl font-bold text-gray-900">Companies</h1>
               <p className="mt-2 text-gray-600">Manage your company records</p>
             </div>
-            <div className="mt-4 md:mt-0 flex gap-2">
+
+            <div className="mt-4 md:mt-0 flex flex-col md:flex-row md:items-center gap-2">
+        
+
+              {/* ➕ Add Company Button */}
               <button
                 className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 onClick={handleAddCompany}
@@ -221,6 +272,7 @@ function Companies() {
                 Add Company
               </button>
 
+              {/* 📄 Download All Button */}
               <button
                 className="inline-flex items-center px-4 py-2 border border-blue-600 text-blue-600 rounded-md shadow-sm text-sm font-medium bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 onClick={handleDownloadCompanies}
@@ -231,8 +283,8 @@ function Companies() {
                 Download All
               </button>
             </div>
-
           </div>
+
         </div>
 
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
