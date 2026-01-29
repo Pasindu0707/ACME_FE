@@ -20,19 +20,24 @@ const axiosInstance = axios.create({
 });
 
 
-// You can add interceptors if needed
+// Request interceptor to add auth token
 axiosInstance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('accessToken');
-    if (token) {
+    // Only add Authorization header if token exists and is not empty
+    if (token && token !== 'undefined' && token.trim() !== '') {
       config.headers.Authorization = `Bearer ${token}`;
     } else {
-      console.log('No token found in localStorage'); // Debug log
+      // Remove Authorization header if no valid token
+      delete config.headers.Authorization;
+      if (config.url && !config.url.includes('/auth') && !config.url.includes('/register')) {
+        console.warn('No valid token found for protected route:', config.url);
+      }
     }
     return config;
   },
   (error) => {
-    console.error('Request interceptor error:', error); // Debug log
+    console.error('Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
