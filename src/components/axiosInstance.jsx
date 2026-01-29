@@ -1,9 +1,18 @@
 // axiosInstance.js
 import axios from 'axios';
 
+// Use environment variable or default to production backend
+const getBaseURL = () => {
+  // Check if we're in development
+  if (import.meta.env.DEV || window.location.hostname === 'localhost') {
+    return 'http://localhost:3500';
+  }
+  // Production backend URL
+  return 'https://acme-be.vercel.app';
+};
+
 const axiosInstance = axios.create({
-  baseURL: 'https://acme-be.vercel.app',
-    // baseURL: 'http://localhost:3500',
+  baseURL: getBaseURL(),
   headers: {
     'Content-Type': 'application/json',
   },
